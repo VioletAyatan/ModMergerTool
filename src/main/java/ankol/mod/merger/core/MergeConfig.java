@@ -1,6 +1,8 @@
 package ankol.mod.merger.core;
 
 import ankol.mod.merger.core.ConflictResolver.MergeChoice;
+
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -191,14 +193,12 @@ public class MergeConfig {
         if (mod1Directory == null || mod2Directory == null) {
             throw new IllegalArgumentException("Must specify two mod directories");
         }
-
         // 检查模组1目录是否存在
-        if (!java.nio.file.Files.exists(mod1Directory)) {
+        if (!Files.exists(mod1Directory)) {
             throw new IllegalArgumentException("Mod1 directory not found: " + mod1Directory);
         }
-
         // 检查模组2目录是否存在
-        if (!java.nio.file.Files.exists(mod2Directory)) {
+        if (!Files.exists(mod2Directory)) {
             throw new IllegalArgumentException("Mod2 directory not found: " + mod2Directory);
         }
     }

@@ -5,6 +5,8 @@ import ankol.mod.merger.core.ConflictResolver.MergeChoice;
 import ankol.mod.merger.core.ConflictResolver.MergeDecision;
 import ankol.mod.merger.merger.ScrTreeComparator.DiffResult;
 import ankol.mod.merger.antlr4.scr.TechlandScriptParser;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -94,10 +96,8 @@ public class ScrScriptModMerger {
         System.out.println("Output: " + outputDir);
         System.out.println("Mode: " + (interactive ? "Interactive" : "Auto (" + defaultStrategy.getDescription() + ")"));
         System.out.println();
-
         // 创建输出目录（如果不存在）
-        Files.createDirectories(outputDir);
-
+        FileUtil.mkdir(outputDir);
         // 扫描两个模组目录，查找所有脚本文件
         List<Path> scripts1 = findScriptFiles(mod1Dir);
         List<Path> scripts2 = findScriptFiles(mod2Dir);
@@ -124,11 +124,9 @@ public class ScrScriptModMerger {
             if (map2.containsKey(filename)) {
                 // 两个模组都有这个文件，需要合并
                 System.out.println("Merging: " + filename);
-
                 try {
                     // 调用mergeScriptFiles进行详细的合并
                     MergeResult result = mergeScriptFiles(map1.get(filename), map2.get(filename));
-
                     // 写入合并结果
                     Path outputPath = outputDir.resolve(filename);
                     Files.createDirectories(outputPath.getParent());
@@ -265,9 +263,9 @@ public class ScrScriptModMerger {
 
         // 遍历每个冲突决策，按决策应用不同的合并策略
         for (MergeDecision decision : decisions) {
-            DiffResult diff = decision.diff;
+            DiffResult diff = decision.diff();
 
-            switch (decision.choice) {
+            switch (decision.choice()) {
                 case KEEP_MOD1:
                     // 保留模组1的版本，不做任何改动
                     break;
@@ -301,14 +299,14 @@ public class ScrScriptModMerger {
 
                 case MANUAL:
                     // 使用用户手动输入的自定义内容
-                    if (decision.customContent != null && !decision.customContent.isEmpty()) {
+                    if (decision.customContent() != null && !decision.customContent().isEmpty()) {
                         if (diff.tree1 != null) {
                             // 用自定义内容替换模组1的版本
                             String text1 = diff.tree1.getText();
                             String contentToMerge = merged.toString();
                             int index = contentToMerge.indexOf(text1);
                             if (index >= 0) {
-                                merged.replace(index, index + text1.length(), decision.customContent);
+                                merged.replace(index, index + text1.length(), decision.customContent());
                             }
                         }
                     }
@@ -320,7 +318,7 @@ public class ScrScriptModMerger {
             }
 
             // 记录所有非SKIP的决策为冲突（用于统计）
-            if (decision.choice != MergeChoice.SKIP) {
+            if (decision.choice() != MergeChoice.SKIP) {
                 result.conflicts.add(diff);
             }
         }
@@ -354,17 +352,15 @@ public class ScrScriptModMerger {
         if (!Files.exists(directory)) {
             return new ArrayList<>();
         }
-
         List<Path> scripts = new ArrayList<>();
-
         // 遍历目录树（包括子目录）
         try (Stream<Path> walk = Files.walk(directory)) {
             // 过滤出常规文件（不是目录等其他类型）
             walk.filter(Files::isRegularFile)
-                    // 过滤出扩展名为 .scr 或 .txt 的文件
+                    // 过滤出scr文件
                     .filter(p -> {
-                        String name = p.getFileName().toString().toLowerCase();
-                        return name.endsWith(".scr") || name.endsWith(".txt");
+                        String fileName = p.getFileName().toString().toLowerCase();
+                        return StrUtil.endWithAny(fileName, ".scr", ".def");
                     })
                     // 添加到列表
                     .forEach(scripts::add);

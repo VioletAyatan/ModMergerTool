@@ -52,12 +52,10 @@ public class AppMain {
      */
     public static void main(String[] args) {
         try {
-            // 第1步：从命令行参数解析配置
-            // MergeConfig.fromArgs会处理所有选项解析和验证
+            //1、解析命令行参数
             MergeConfig config = MergeConfig.fromArgs(args);
 
             // 第2步：验证配置的合法性
-            // 检查模组目录是否存在等
             config.validate();
 
             // 第3步：如果启用详细模式，打印配置信息用于调试

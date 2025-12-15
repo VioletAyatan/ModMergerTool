@@ -2,10 +2,12 @@ package ankol.mod.merger.merger;
 
 import ankol.mod.merger.antlr4.scr.TechlandScriptLexer;
 import ankol.mod.merger.antlr4.scr.TechlandScriptParser;
+import cn.hutool.core.io.FileUtil;
 import org.antlr.v4.runtime.*;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 /**
@@ -31,13 +33,13 @@ public class ScrScriptParser {
      *
      * @param scriptPath 脚本文件的路径
      * @return 脚本的语法树根节点 FileContext
-     * @throws IOException 文件读取失败时抛出
      */
-    public static TechlandScriptParser.FileContext parseFile(Path scriptPath) throws IOException {
-        // 读取脚本文件的全部内容为字符串
-        String content = Files.readString(scriptPath);
-        // 将内容交给parseContent方法进行实际的解析
-        return parseContent(content);
+    public static TechlandScriptParser.FileContext parseFile(Path scriptPath) {
+        try {
+            return parseContent(FileUtil.getInputStream(scriptPath));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -48,26 +50,20 @@ public class ScrScriptParser {
      * 3. 添加自定义错误监听器用于错误处理
      * 4. 调用file()方法启动语法分析，返回语法树
      *
-     * @param content 脚本的文本内容
+     * @param inputStream 文件输入流
      * @return 脚本的抽象语法树 (FileContext 根节点)
      */
-    public static TechlandScriptParser.FileContext parseContent(String content) {
-        // 将字符串转换为ANTLR4字符流
-        CharStream input = CharStreams.fromString(content);
-        // 创建词法和语法分析器
-        TechlandScriptParser parser = getTechlandScriptParser(input);
-        // 添加自定义错误监听器用于捕获语法分析错误
+    public static TechlandScriptParser.FileContext parseContent(InputStream inputStream) throws IOException {
+        TechlandScriptParser parser = getTechlandScriptParser(CharStreams.fromStream(inputStream, StandardCharsets.UTF_8));
+        //解析器添加错误监听器，用户捕获解析过程中出现的错误
         parser.addErrorListener(new BaseErrorListener() {
             @Override
             public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                                     int line, int charPositionInLine, String msg,
                                     RecognitionException e) {
-                // 打印语法错误信息（行号、列号、错误描述）
                 System.err.println("Parser Error at line " + line + ":" + charPositionInLine + " - " + msg);
             }
         });
-
-        // 启动语法分析，file() 对应 TechlandScript.g4 中的 "file" 规则
         return parser.file();
     }
 
@@ -86,8 +82,6 @@ public class ScrScriptParser {
     private static TechlandScriptParser getTechlandScriptParser(CharStream input) {
         // 创建词法分析器，将输入字符流转换为词元序列
         TechlandScriptLexer lexer = new TechlandScriptLexer(input);
-
-        // 移除默认错误监听器，避免冗长的默认错误输出
         lexer.removeErrorListeners();
         // 添加自定义错误监听器用于捕获词法分析错误
         lexer.addErrorListener(new BaseErrorListener() {
@@ -99,15 +93,9 @@ public class ScrScriptParser {
                 System.err.println("Lexer Error at line " + line + ":" + charPositionInLine + " - " + msg);
             }
         });
-
-        // 创建词元流，作为词法分析器和语法分析器的中间层
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        // 创建语法分析器，使用词元流和语法规则生成语法树
         TechlandScriptParser parser = new TechlandScriptParser(tokens);
-
-        // 移除默认错误监听器，避免重复的错误输出
         parser.removeErrorListeners();
-
         return parser;
     }
 }

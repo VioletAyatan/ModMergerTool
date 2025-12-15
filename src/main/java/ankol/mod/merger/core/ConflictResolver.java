@@ -72,21 +72,12 @@ public class ConflictResolver {
      * - 冲突的详细信息（两个版本的代码）
      * - 用户的选择（5个选项中的一个）
      * - 如果用户选择MANUAL，还包含自定义的合并内容
+     *
+     * @param diff          冲突的详细信息
+     * @param choice        用户选择的合并方案
+     * @param customContent 用户自定义的合并内容（仅当choice==MANUAL时有效）
      */
-    public static class MergeDecision {
-        /**
-         * 冲突的详细信息
-         */
-        public final DiffResult diff;
-        /**
-         * 用户选择的合并方案
-         */
-        public final MergeChoice choice;
-        /**
-         * 用户自定义的合并内容（仅当choice==MANUAL时有效）
-         */
-        public final String customContent;
-
+    public record MergeDecision(DiffResult diff, MergeChoice choice, String customContent) {
         /**
          * 构造函数 - 不含自定义内容
          *
@@ -95,19 +86,6 @@ public class ConflictResolver {
          */
         public MergeDecision(DiffResult diff, MergeChoice choice) {
             this(diff, choice, null);
-        }
-
-        /**
-         * 构造函数 - 含自定义内容
-         *
-         * @param diff          冲突信息
-         * @param choice        合并选择
-         * @param customContent 自定义合并内容
-         */
-        public MergeDecision(DiffResult diff, MergeChoice choice, String customContent) {
-            this.diff = diff;
-            this.choice = choice;
-            this.customContent = customContent;
         }
     }
 
