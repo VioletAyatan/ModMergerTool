@@ -93,13 +93,17 @@ public class ScrTreeComparator {
      * - 如果在模组1中不存在，记录为"新增"
      * 5. 返回所有差异结果
      *
-     * @param file1 模组1的语法树根节点
-     * @param file2 模组2的语法树根节点
+     * @param file1         模组1的语法树根节点
+     * @param file2         模组2的语法树根节点
+     * @param script1Parser mod1解析器
+     * @param script2Parser mod2解析器
      * @return 差异列表，每个元素代表一个差异
      * 如果列表为空，表示两个脚本完全相同
      */
     public static List<DiffResult> compareFiles(TechlandScriptParser.FileContext file1,
-                                                TechlandScriptParser.FileContext file2) {
+                                                TechlandScriptParser.FileContext file2,
+                                                ScrScriptParser script1Parser,
+                                                ScrScriptParser script2Parser) {
         List<DiffResult> diffs = new ArrayList<>();
 
         // 获取两个文件的所有顶级定义（import, export, sub, 等）

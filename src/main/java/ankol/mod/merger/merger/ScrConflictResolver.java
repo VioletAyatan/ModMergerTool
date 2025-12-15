@@ -1,4 +1,4 @@
-package ankol.mod.merger.core;
+package ankol.mod.merger.merger;
 
 import ankol.mod.merger.merger.ScrTreeComparator.DiffResult;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * - 交互模式：resolveConflicts() - 为每个冲突提示用户选择
  * - 自动模式：autoResolve() - 自动应用一个统一的策略
  */
-public class ConflictResolver {
+public class ScrConflictResolver {
 
     /**
      * 合并选择枚举 - 表示处理冲突的5种方案

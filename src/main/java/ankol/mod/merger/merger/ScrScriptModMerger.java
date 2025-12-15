@@ -1,8 +1,7 @@
 package ankol.mod.merger.merger;
 
-import ankol.mod.merger.core.ConflictResolver;
-import ankol.mod.merger.core.ConflictResolver.MergeChoice;
-import ankol.mod.merger.core.ConflictResolver.MergeDecision;
+import ankol.mod.merger.merger.ScrConflictResolver.MergeChoice;
+import ankol.mod.merger.merger.ScrConflictResolver.MergeDecision;
 import ankol.mod.merger.merger.ScrTreeComparator.DiffResult;
 import ankol.mod.merger.antlr4.scr.TechlandScriptParser;
 import cn.hutool.core.io.FileUtil;
@@ -208,7 +207,7 @@ public class ScrScriptModMerger {
         TechlandScriptParser.FileContext fileTree2 = script2Parser.parseFile(script2);
 
         // 第2步：对比两个AST，获取差异列表
-        List<DiffResult> diffs = ScrTreeComparator.compareFiles(fileTree1, fileTree2);
+        List<DiffResult> diffs = ScrTreeComparator.compareFiles(fileTree1, fileTree2, script1Parser, script2Parser);
 
         // 初始化合并结果
         MergeResult result = new MergeResult();
@@ -228,10 +227,10 @@ public class ScrScriptModMerger {
             System.out.println("\n" + "=".repeat(80));
             System.out.println("⚠️ CONFLICTS DETECTED IN [" + script1.getFileName() + "] - User Interaction Required");
             System.out.println("=".repeat(80));
-            decisions = ConflictResolver.resolveConflicts(diffs);
+            decisions = ScrConflictResolver.resolveConflicts(diffs);
         }
         // 第5步：根据决策构建合并后的内容
-        result = buildMergedContent(script1, script2, fileTree1, fileTree2, diffs, decisions);
+        result = buildMergedContent(script1, script2, decisions);
         return result;
     }
 
@@ -251,18 +250,11 @@ public class ScrScriptModMerger {
      *
      * @param script1Path 模组1的脚本路径（用于读取原始内容）
      * @param script2Path 模组2的脚本路径（用于读取原始内容）
-     * @param file1       模组1的AST（未使用，预留以备后用）
-     * @param file2       模组2的AST（未使用，预留以备后用）
-     * @param diffs       差异列表（未使用，已通过decisions提供）
      * @param decisions   冲突决策列表
      * @return 包含合并内容和冲突信息的MergeResult
      * @throws IOException 如果文件读取失败
      */
-    private MergeResult buildMergedContent(Path script1Path, Path script2Path,
-                                           TechlandScriptParser.FileContext file1,
-                                           TechlandScriptParser.FileContext file2,
-                                           List<DiffResult> diffs,
-                                           List<MergeDecision> decisions) throws IOException {
+    private MergeResult buildMergedContent(Path script1Path, Path script2Path, List<MergeDecision> decisions) throws IOException {
         MergeResult result = new MergeResult();
 
         // 读取两个脚本的原始内容

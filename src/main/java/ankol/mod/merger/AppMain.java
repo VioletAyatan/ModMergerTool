@@ -1,7 +1,7 @@
 package ankol.mod.merger;
 
-import ankol.mod.merger.core.ConflictResolver;
-import ankol.mod.merger.core.MergeConfig;
+import ankol.mod.merger.merger.ScrConflictResolver;
+import ankol.mod.merger.core.SimpleArgumentsParser;
 import ankol.mod.merger.merger.ScrScriptModMerger;
 
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class AppMain {
     public static void main(String[] args) {
         try {
             //1、解析命令行参数
-            MergeConfig config = MergeConfig.fromArgs(args);
+            SimpleArgumentsParser config = SimpleArgumentsParser.fromArgs(args);
             // 第2步：验证配置的合法性
             config.validate();
             // 第3步：如果启用详细模式，打印配置信息用于调试
@@ -87,7 +87,7 @@ public class AppMain {
             e.printStackTrace();
             System.exit(3);
         } finally {
-            ConflictResolver.close();
+            ScrConflictResolver.close();
         }
     }
 }

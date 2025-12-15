@@ -1,6 +1,6 @@
 package ankol.mod.merger.core;
 
-import ankol.mod.merger.core.ConflictResolver.MergeChoice;
+import ankol.mod.merger.merger.ScrConflictResolver.MergeChoice;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +23,7 @@ import java.nio.file.Paths;
  * - defaultMergeStrategy: 自动模式的默认合并策略（默认：KEEP_MOD1）
  * - verbose: 是否显示详细信息（默认：false）
  */
-public class MergeConfig {
+public class SimpleArgumentsParser {
     /**
      * 第一个模组的目录路径
      */
@@ -54,7 +54,7 @@ public class MergeConfig {
      * - 详细模式禁用
      * - 输出目录：./merged_mod
      */
-    public MergeConfig() {
+    public SimpleArgumentsParser() {
         this.interactiveMode = true;
         this.verbose = false;
         this.outputDirectory = Paths.get("./merged_mod");
@@ -84,9 +84,9 @@ public class MergeConfig {
      * @return 解析完成的配置对象
      * @throws IllegalArgumentException 如果参数无效
      */
-    public static MergeConfig fromArgs(String[] args) throws IllegalArgumentException {
+    public static SimpleArgumentsParser fromArgs(String[] args) throws IllegalArgumentException {
         // 创建默认配置对象
-        MergeConfig config = new MergeConfig();
+        SimpleArgumentsParser config = new SimpleArgumentsParser();
 
         // 第1步：优先检查帮助标志
         // 如果找到 -h 或 --help，显示帮助信息并退出
