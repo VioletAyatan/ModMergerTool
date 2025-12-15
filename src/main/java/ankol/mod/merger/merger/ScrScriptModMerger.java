@@ -202,11 +202,13 @@ public class ScrScriptModMerger {
     @SuppressWarnings("all")
     private MergeResult mergeScriptFiles(Path script1, Path script2) throws IOException {
         // 1、使用Antlr4将文件内容解析为AST语法树
-        TechlandScriptParser.FileContext file1 = ScrScriptParser.parseFile(script1);
-        TechlandScriptParser.FileContext file2 = ScrScriptParser.parseFile(script2);
+        ScrScriptParser script1Parser = new ScrScriptParser();
+        ScrScriptParser script2Parser = new ScrScriptParser();
+        TechlandScriptParser.FileContext fileTree1 = script1Parser.parseFile(script1);
+        TechlandScriptParser.FileContext fileTree2 = script2Parser.parseFile(script2);
 
         // 第2步：对比两个AST，获取差异列表
-        List<DiffResult> diffs = ScrTreeComparator.compareFiles(file1, file2);
+        List<DiffResult> diffs = ScrTreeComparator.compareFiles(fileTree1, fileTree2);
 
         // 初始化合并结果
         MergeResult result = new MergeResult();
@@ -229,7 +231,7 @@ public class ScrScriptModMerger {
             decisions = ConflictResolver.resolveConflicts(diffs);
         }
         // 第5步：根据决策构建合并后的内容
-        result = buildMergedContent(script1, script2, file1, file2, diffs, decisions);
+        result = buildMergedContent(script1, script2, fileTree1, fileTree2, diffs, decisions);
         return result;
     }
 

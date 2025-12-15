@@ -24,6 +24,9 @@ import java.nio.file.Path;
  * 支持的语法：TechlandScript.g4 定义的完整语法
  */
 public class ScrScriptParser {
+    private TokenStream tokenStream;
+    private TechlandScriptParser techlandScriptParser;
+    private TechlandScriptLexer techlandScriptLexer;
 
     /**
      * 从文件路径解析脚本
@@ -34,7 +37,7 @@ public class ScrScriptParser {
      * @param scriptPath 脚本文件的路径
      * @return 脚本的语法树根节点 FileContext
      */
-    public static TechlandScriptParser.FileContext parseFile(Path scriptPath) {
+    public TechlandScriptParser.FileContext parseFile(Path scriptPath) {
         try {
             return parseContent(FileUtil.getInputStream(scriptPath));
         } catch (IOException e) {
@@ -53,7 +56,7 @@ public class ScrScriptParser {
      * @param inputStream 文件输入流
      * @return 脚本的抽象语法树 (FileContext 根节点)
      */
-    public static TechlandScriptParser.FileContext parseContent(InputStream inputStream) throws IOException {
+    public TechlandScriptParser.FileContext parseContent(InputStream inputStream) throws IOException {
         TechlandScriptParser parser = getTechlandScriptParser(CharStreams.fromStream(inputStream, StandardCharsets.UTF_8));
         //解析器添加错误监听器，用户捕获解析过程中出现的错误
         parser.addErrorListener(new BaseErrorListener() {
@@ -68,23 +71,17 @@ public class ScrScriptParser {
     }
 
     /**
-     * 创建并配置词法分析器和语法分析器
-     * 执行流程：
-     * 1. 创建词法分析器
-     * 2. 配置词法分析器的错误监听器
-     * 3. 创建词元流
-     * 4. 创建语法分析器
-     * 5. 配置语法分析器的错误监听器
+     * 获取Techland语法树解析器
      *
-     * @param input 字符流输入
-     * @return 配置好的语法分析器实例
+     * @param input 输入字符流
+     * @return {@link TechlandScriptParser}
      */
-    private static TechlandScriptParser getTechlandScriptParser(CharStream input) {
+    private TechlandScriptParser getTechlandScriptParser(CharStream input) {
         // 创建词法分析器，将输入字符流转换为词元序列
-        TechlandScriptLexer lexer = new TechlandScriptLexer(input);
-        lexer.removeErrorListeners();
+        this.techlandScriptLexer = new TechlandScriptLexer(input);
+        this.techlandScriptLexer.removeErrorListeners();
         // 添加自定义错误监听器用于捕获词法分析错误
-        lexer.addErrorListener(new BaseErrorListener() {
+        this.techlandScriptLexer.addErrorListener(new BaseErrorListener() {
             @Override
             public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                                     int line, int charPositionInLine, String msg,
@@ -93,10 +90,37 @@ public class ScrScriptParser {
                 System.err.println("Lexer Error at line " + line + ":" + charPositionInLine + " - " + msg);
             }
         });
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        TechlandScriptParser parser = new TechlandScriptParser(tokens);
-        parser.removeErrorListeners();
-        return parser;
+        this.tokenStream = new CommonTokenStream(techlandScriptLexer);
+        this.techlandScriptParser = new TechlandScriptParser(tokenStream);
+        this.techlandScriptParser.removeErrorListeners();
+        return techlandScriptParser;
+    }
+
+    /**
+     * 获取 {@link TokenStream}
+     *
+     * @return {@link TokenStream}
+     */
+    public TokenStream getTokenStream() {
+        return tokenStream;
+    }
+
+    /**
+     * 获取 {@link TechlandScriptParser}
+     *
+     * @return {@link TechlandScriptParser}
+     */
+    public TechlandScriptParser getTechlandScriptParser() {
+        return techlandScriptParser;
+    }
+
+    /**
+     * 获取 {@link TechlandScriptLexer}
+     *
+     * @return {@link TechlandScriptLexer}
+     */
+    public TechlandScriptLexer getTechlandScriptLexer() {
+        return techlandScriptLexer;
     }
 }
 
