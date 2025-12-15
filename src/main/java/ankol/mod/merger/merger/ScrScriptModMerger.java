@@ -111,9 +111,11 @@ public class ScrScriptModMerger {
         Map<String, Path> map2 = buildFileMap(mod2Dir, scripts2);
 
         // 统计计数器
-        int mergedCount = 0;      // 成功合并的文件数
+        int mergedCount = 0;      // 成功合并（无冲突）的文件数
         int conflictCount = 0;     // 包含冲突的文件数
+        int copiedCount = 0;       // 直接复制的文件数（不可解析）
         int addedCount = 0;        // 新增文件数
+        boolean hasAnyConflict = false; // 是否存在任何冲突
 
         // 处理模组1中的文件
         Set<String> processedFiles = new HashSet<>();
@@ -123,35 +125,45 @@ public class ScrScriptModMerger {
 
             if (map2.containsKey(filename)) {
                 // 两个模组都有这个文件，需要合并
-                System.out.println("Merging: " + filename);
+                System.out.println("Processing: " + filename);
                 try {
-                    // 调用mergeScriptFiles进行详细的合并
-                    MergeResult result = mergeScriptFiles(map1.get(filename), map2.get(filename));
-                    // 写入合并结果
-                    Path outputPath = outputDir.resolve(filename);
-                    Files.createDirectories(outputPath.getParent());
-                    Files.writeString(outputPath, result.mergedContent);
+                    if (isParseableFile(filename)) {
+                        // 可解析的文件（.scr, .txt）进行智能合并和对比
+                        MergeResult result = mergeScriptFiles(map1.get(filename), map2.get(filename));
+                        // 写入合并结果
+                        Path outputPath = outputDir.resolve(filename);
+                        Files.createDirectories(outputPath.getParent());
+                        Files.writeString(outputPath, result.mergedContent);
 
-                    // 根据是否有冲突进行计数
-                    if (result.hasConflicts) {
-                        conflictCount++;
-                        System.out.println("  ! " + result.conflicts.size() + " conflicts");
+                        // 根据是否有冲突进行计数
+                        if (result.hasConflicts) {
+                            hasAnyConflict = true;
+                            conflictCount++;
+                            System.out.println("  ⚠ " + result.conflicts.size() + " conflicts detected");
+                        } else {
+                            mergedCount++;
+                            System.out.println("  ✓ Merged (no conflicts)");
+                        }
                     } else {
-                        mergedCount++;
-                        System.out.println("  OK");
+                        // 不可解析的文件（.def, .model, .loot, .xml等）直接使用mod2版本
+                        Path outputPath = outputDir.resolve(filename);
+                        Files.createDirectories(outputPath.getParent());
+                        Files.copy(map2.get(filename), outputPath, StandardCopyOption.REPLACE_EXISTING);
+                        copiedCount++;
+                        System.out.println("  ✓ Copied (Mod2 version - non-parseable)");
                     }
 
                 } catch (Exception e) {
                     // 如果合并过程中出错，打印错误信息但继续处理其他文件
-                    System.err.println("  ERROR: " + e.getMessage());
+                    System.err.println("  ✗ ERROR: " + e.getMessage());
                 }
             } else {
                 // 只在模组1中存在的文件，直接复制到输出目录
-                System.out.println("Copying: " + filename);
+                System.out.println("Copying: " + filename + " (Mod1 only)");
                 Path outputPath = outputDir.resolve(filename);
                 Files.createDirectories(outputPath.getParent());
                 Files.copy(map1.get(filename), outputPath, StandardCopyOption.REPLACE_EXISTING);
-                mergedCount++;
+                copiedCount++;
             }
         }
 
@@ -159,7 +171,7 @@ public class ScrScriptModMerger {
         for (String filename : map2.keySet()) {
             if (!processedFiles.contains(filename)) {
                 // 这个文件只在模组2中，直接复制到输出目录
-                System.out.println("Copying: " + filename);
+                System.out.println("Adding: " + filename + " (Mod2 only)");
                 Path outputPath = outputDir.resolve(filename);
                 Files.createDirectories(outputPath.getParent());
                 Files.copy(map2.get(filename), outputPath, StandardCopyOption.REPLACE_EXISTING);
@@ -167,11 +179,20 @@ public class ScrScriptModMerger {
             }
         }
 
+        // 如果存在冲突，给出警告信息
+        if (hasAnyConflict) {
+            System.out.println("\n⚠️  WARNING: Conflicts detected during merge!");
+            System.out.println("Please review the conflicts and ensure all files are correct.");
+        }
+
         // 输出合并完成信息和统计
         System.out.println("\n====== Merge Complete ======");
-        System.out.println("Merged: " + mergedCount);
+        System.out.println("Successfully merged: " + mergedCount);
+        System.out.println("Copied (no conflicts): " + copiedCount);
         System.out.println("With conflicts: " + conflictCount);
-        System.out.println("New files: " + addedCount);
+        System.out.println("New files from Mod2: " + addedCount);
+        System.out.println("─────────────────────────────");
+        System.out.println("Total files: " + (mergedCount + copiedCount + conflictCount + addedCount));
         System.out.println("Output: " + outputDir);
     }
 
@@ -182,8 +203,11 @@ public class ScrScriptModMerger {
      * 1. 使用ScriptParser解析两个脚本为AST
      * 2. 使用TreeComparator对比AST，找出差异
      * 3. 如果没有差异，直接返回模组1的内容
-     * 4. 如果有差异，根据模式（交互/自动）解决冲突
-     * 5. 根据冲突决策构建合并结果
+     * 4. 如果有差异，必须进入交互模式让用户选择如何解决冲突
+     * 5. 根据用户的冲突决策构建合并结果
+     * <p>
+     * 重要：当检测到冲突时，即使指定了自动模式（-a），也会强制进入交互模式，
+     * 提示用户逐一处理每个冲突，确保用户了解和确认所有的修改。
      *
      * @param script1 模组1的脚本文件路径
      * @param script2 模组2的脚本文件路径
@@ -208,14 +232,28 @@ public class ScrScriptModMerger {
             return result;
         }
 
-        // 第4步：根据合并模式解决冲突
+        // 第4步：检测到冲突，必须进入交互模式
+        // 即使用户指定了自动模式（-a），也要强制进入交互模式处理冲突
         List<MergeDecision> decisions;
-        if (interactive) {
+
+        if (diffs.isEmpty()) {
+            // 如果没有差异，直接返回
+            decisions = new ArrayList<>();
+        } else if (interactive) {
             // 交互模式：为每个冲突让用户决策
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("⚠️  CONFLICTS DETECTED - User Interaction Required");
+            System.out.println("=".repeat(80));
             decisions = ConflictResolver.resolveConflicts(diffs);
         } else {
-            // 自动模式：使用统一的策略处理所有冲突
-            decisions = ConflictResolver.autoResolve(diffs, defaultStrategy);
+            // 自动模式但检测到冲突：强制进入交互模式
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("⚠️  CONFLICTS DETECTED IN FILE: " + script1.getFileName());
+            System.out.println("⚠️  Auto mode cannot handle conflicts automatically.");
+            System.out.println("⚠️  Switching to interactive mode for conflict resolution.");
+            System.out.println("=".repeat(80));
+            // 强制进入交互模式处理冲突
+            decisions = ConflictResolver.resolveConflicts(diffs);
         }
 
         // 第5步：根据决策构建合并后的内容
@@ -332,15 +370,42 @@ public class ScrScriptModMerger {
     }
 
     /**
+     * 判断文件是否可以被ANTLR4解析
+     * <p>
+     * 可解析的文件类型：
+     * - .scr - 脚本文件（主要）
+     * - .txt - 文本脚本文件
+     * <p>
+     * 不可解析的文件类型（直接复制）：
+     * - .def  - 定义文件
+     * - .model - 模型文件
+     * - .loot - 掉落定义
+     * - .xml  - XML文件
+     *
+     * @param filename 文件名
+     * @return true 如果文件可解析，false 否则
+     */
+    private boolean isParseableFile(String filename) {
+        String lower = filename.toLowerCase();
+        return StrUtil.endWithAny(lower, ".scr", ".txt");
+    }
+
+    /**
      * 递归查找目录中的所有脚本文件
      * <p>
-     * 文件类型：.scr 和 .txt 扩展名
+     * 支持的文件类型：
+     * - .scr  - Techland脚本文件（主要，可解析对比）
+     * - .txt  - 文本脚本文件（可解析对比）
+     * - .def  - 定义文件（复制）
+     * - .model - 模型定义文件（复制）
+     * - .loot - 掉落物品定义（复制）
+     * - .xml  - XML配置文件（复制）
      * <p>
      * 执行流程：
      * 1. 检查目录是否存在，不存在返回空列表
      * 2. 使用Files.walk进行深度优先遍历
      * 3. 过滤出常规文件（非目录）
-     * 4. 过滤出扩展名为 .scr 或 .txt 的文件
+     * 4. 过滤出支持的所有文件类型
      * 5. 返回文件列表
      *
      * @param directory 要扫描的目录
@@ -357,10 +422,17 @@ public class ScrScriptModMerger {
         try (Stream<Path> walk = Files.walk(directory)) {
             // 过滤出常规文件（不是目录等其他类型）
             walk.filter(Files::isRegularFile)
-                    // 过滤出scr文件
+                    // 过滤出支持的脚本文件类型
                     .filter(p -> {
                         String fileName = p.getFileName().toString().toLowerCase();
-                        return StrUtil.endWithAny(fileName, ".scr", ".def");
+                        // 支持的所有文件类型
+                        return StrUtil.endWithAny(fileName,
+                                ".scr",     // 脚本文件（可解析）
+                                ".txt",     // 文本文件（可解析）
+                                ".def",     // 定义文件（复制）
+                                ".model",   // 模型定义（复制）
+                                ".loot",    // 掉落物品定义（复制）
+                                ".xml");    // XML配置（复制）
                     })
                     // 添加到列表
                     .forEach(scripts::add);
