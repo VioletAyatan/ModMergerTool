@@ -54,52 +54,39 @@ public class AppMain {
         try {
             //1、解析命令行参数
             MergeConfig config = MergeConfig.fromArgs(args);
-
             // 第2步：验证配置的合法性
             config.validate();
-
             // 第3步：如果启用详细模式，打印配置信息用于调试
             if (config.verbose) {
                 System.out.println("Config: " + config);
             }
 
             // 第4步：创建核心合并引擎实例
-            // 传入：两个模组目录、输出目录、交互模式标志、默认合并策略
             ScrScriptModMerger merger = new ScrScriptModMerger(
                     config.mod1Directory,
                     config.mod2Directory,
-                    config.outputDirectory,
-                    config.interactiveMode,
-                    config.defaultMergeStrategy
+                    config.outputDirectory
             );
-
             // 第5步：执行合并操作
             // 这是主要的业务逻辑，会扫描目录、解析脚本、对比差异、处理冲突
             merger.merge();
-            // 第6步：合并成功，打印完成信息
             System.out.println("\nDone!");
-            // 以成功退出码退出
             System.exit(0);
         } catch (IllegalArgumentException e) {
             // 参数错误处理：打印错误信息，退出码1
             System.err.println("Error: " + e.getMessage());
             System.exit(1);
-
         } catch (IOException e) {
             // 文件IO错误处理：打印错误信息和堆栈跟踪，退出码2
             System.err.println("IO Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(2);
-
         } catch (Exception e) {
             // 其他运行时异常处理：打印错误信息和堆栈跟踪，退出码3
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(3);
-
         } finally {
-            // 资源清理：无论成功或失败，都关闭扫描器（在交互模式中创建）
-            // 防止资源泄漏
             ConflictResolver.close();
         }
     }

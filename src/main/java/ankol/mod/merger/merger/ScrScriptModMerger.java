@@ -46,31 +46,18 @@ public class ScrScriptModMerger {
      * 合并结果输出目录
      */
     private final Path outputDir;
-    /**
-     * 是否使用交互模式（true=交互，false=自动）
-     */
-    private final boolean interactive;
-    /**
-     * 自动模式下的默认合并策略
-     */
-    private final MergeChoice defaultStrategy;
 
     /**
      * 构造函数 - 初始化合并引擎
      *
-     * @param mod1Dir         模组1目录
-     * @param mod2Dir         模组2目录
-     * @param outputDir       输出目录
-     * @param interactive     是否交互模式
-     * @param defaultStrategy 自动模式的默认策略
+     * @param mod1Dir   模组1目录
+     * @param mod2Dir   模组2目录
+     * @param outputDir 输出目录
      */
-    public ScrScriptModMerger(Path mod1Dir, Path mod2Dir, Path outputDir,
-                              boolean interactive, MergeChoice defaultStrategy) {
+    public ScrScriptModMerger(Path mod1Dir, Path mod2Dir, Path outputDir) {
         this.mod1Dir = mod1Dir;
         this.mod2Dir = mod2Dir;
         this.outputDir = outputDir;
-        this.interactive = interactive;
-        this.defaultStrategy = defaultStrategy;
     }
 
     /**
@@ -94,7 +81,6 @@ public class ScrScriptModMerger {
         System.out.println("Mod1: " + mod1Dir);
         System.out.println("Mod2: " + mod2Dir);
         System.out.println("Output: " + outputDir);
-        System.out.println("Mode: " + (interactive ? "Interactive" : "Auto (" + defaultStrategy.getDescription() + ")"));
         System.out.println();
         // 创建输出目录（如果不存在）
         FileUtil.mkdir(outputDir);
@@ -239,26 +225,15 @@ public class ScrScriptModMerger {
         if (diffs.isEmpty()) {
             // 如果没有差异，直接返回
             decisions = new ArrayList<>();
-        } else if (interactive) {
+        } else {
             // 交互模式：为每个冲突让用户决策
             System.out.println("\n" + "=".repeat(80));
             System.out.println("⚠️  CONFLICTS DETECTED - User Interaction Required");
             System.out.println("=".repeat(80));
             decisions = ConflictResolver.resolveConflicts(diffs);
-        } else {
-            // 自动模式但检测到冲突：强制进入交互模式
-            System.out.println("\n" + "=".repeat(80));
-            System.out.println("⚠️  CONFLICTS DETECTED IN FILE: " + script1.getFileName());
-            System.out.println("⚠️  Auto mode cannot handle conflicts automatically.");
-            System.out.println("⚠️  Switching to interactive mode for conflict resolution.");
-            System.out.println("=".repeat(80));
-            // 强制进入交互模式处理冲突
-            decisions = ConflictResolver.resolveConflicts(diffs);
         }
-
         // 第5步：根据决策构建合并后的内容
         result = buildMergedContent(script1, script2, file1, file2, diffs, decisions);
-
         return result;
     }
 

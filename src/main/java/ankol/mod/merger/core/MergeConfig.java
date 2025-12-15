@@ -8,13 +8,13 @@ import java.nio.file.Paths;
 
 /**
  * 合并配置类 - 管理程序的配置和命令行参数解析
- *
+ * <p>
  * 职责：
  * 1. 存储合并操作的所有配置参数
  * 2. 从命令行参数解析配置
  * 3. 验证配置的有效性
  * 4. 显示帮助信息
- *
+ * <p>
  * 配置参数：
  * - mod1Directory: 第一个模组目录
  * - mod2Directory: 第二个模组目录
@@ -24,22 +24,30 @@ import java.nio.file.Paths;
  * - verbose: 是否显示详细信息（默认：false）
  */
 public class MergeConfig {
-    /** 第一个模组的目录路径 */
+    /**
+     * 第一个模组的目录路径
+     */
     public Path mod1Directory;
-    /** 第二个模组的目录路径 */
+    /**
+     * 第二个模组的目录路径
+     */
     public Path mod2Directory;
-    /** 合并结果的输出目录 */
+    /**
+     * 合并结果的输出目录
+     */
     public Path outputDirectory;
-    /** 是否使用交互模式（true=交互，false=自动） */
+    /**
+     * 是否使用交互模式（true=交互，false=自动）
+     */
     public boolean interactiveMode;
-    /** 自动模式下的默认合并策略 */
-    public MergeChoice defaultMergeStrategy;
-    /** 是否启用详细输出 */
+    /**
+     * 是否启用详细输出
+     */
     public boolean verbose;
 
     /**
      * 默认构造函数 - 设置默认值
-     *
+     * <p>
      * 默认配置：
      * - 交互模式启用
      * - 默认策略：KEEP_MOD1（优先保留模组1）
@@ -48,17 +56,16 @@ public class MergeConfig {
      */
     public MergeConfig() {
         this.interactiveMode = true;
-        this.defaultMergeStrategy = MergeChoice.KEEP_MOD1;
         this.verbose = false;
         this.outputDirectory = Paths.get("./merged_mod");
     }
 
     /**
      * 从命令行参数构建配置对象
-     *
+     * <p>
      * 命令行格式：
-     *   ModMergerTool <mod1_dir> <mod2_dir> [output_dir] [options]
-     *
+     * ModMergerTool <mod1_dir> <mod2_dir> [output_dir] [options]
+     * <p>
      * 执行流程：
      * 1. 创建默认配置对象
      * 2. 优先检查帮助标志（-h, --help）
@@ -66,7 +73,7 @@ public class MergeConfig {
      * 4. 解析必需参数（mod1目录, mod2目录）
      * 5. 循环解析可选参数
      * 6. 返回配置对象
-     *
+     * <p>
      * 支持的参数：
      * -o, --output <dir>  - 指定输出目录
      * -a, --auto <strategy> - 启用自动模式并指定策略
@@ -94,12 +101,12 @@ public class MergeConfig {
         // 至少需要两个参数（mod1_dir 和 mod2_dir）
         if (args.length < 2) {
             throw new IllegalArgumentException(
-                "Usage: mod1_dir mod2_dir [output_dir] [options]\n" +
-                "Options:\n" +
-                "  -o, --output <dir>        Output directory (default: ./merged_mod)\n" +
-                "  -a, --auto <strategy>     Auto mode (keep-mod1|keep-mod2|keep-both)\n" +
-                "  -v, --verbose             Verbose output\n" +
-                "  -h, --help                Show help\n"
+                    "Usage: mod1_dir mod2_dir [output_dir] [options]\n" +
+                            "Options:\n" +
+                            "  -o, --output <dir>        Output directory (default: ./merged_mod)\n" +
+                            "  -a, --auto <strategy>     Auto mode (keep-mod1|keep-mod2|keep-both)\n" +
+                            "  -v, --verbose             Verbose output\n" +
+                            "  -h, --help                Show help\n"
             );
         }
 
@@ -119,29 +126,15 @@ public class MergeConfig {
                         config.outputDirectory = Paths.get(args[++i]);
                     }
                     break;
-
-                case "-a":
-                case "--auto":
-                    // 自动模式选项，禁用交互模式
-                    config.interactiveMode = false;
-                    // 下一个参数是合并策略
-                    if (i + 1 < args.length) {
-                        String strategy = args[++i];
-                        config.defaultMergeStrategy = parseStrategy(strategy);
-                    }
-                    break;
-
                 case "-v":
                 case "--verbose":
                     // 详细模式选项，无需参数
                     config.verbose = true;
                     break;
-
                 case "-h":
                 case "--help":
                     // 帮助选项，已在前面优先处理过
                     break;
-
                 default:
                     // 如果是未被识别的参数且不以 "-" 开头，
                     // 且输出目录还是默认值，则将其作为输出目录
@@ -157,12 +150,12 @@ public class MergeConfig {
 
     /**
      * 解析合并策略字符串为枚举值
-     *
+     * <p>
      * 支持的策略字符串：
      * - "keep-mod1"  -> MergeChoice.KEEP_MOD1
      * - "keep-mod2"  -> MergeChoice.KEEP_MOD2
      * - "keep-both"  -> MergeChoice.KEEP_BOTH
-     *
+     * <p>
      * 参数不区分大小写。
      *
      * @param strategy 策略字符串
@@ -180,7 +173,7 @@ public class MergeConfig {
 
     /**
      * 验证配置的有效性
-     *
+     * <p>
      * 检查内容：
      * 1. mod1Directory 和 mod2Directory 不为null
      * 2. mod1Directory 指向的目录存在
@@ -205,7 +198,7 @@ public class MergeConfig {
 
     /**
      * 打印帮助信息到标准输出
-     *
+     * <p>
      * 显示内容：
      * - 工具的名称和版本
      * - 使用方法
@@ -214,24 +207,23 @@ public class MergeConfig {
      */
     private static void printHelp() {
         System.out.println(
-            "Techland Mod Merger v1.0\n" +
-            "\nUsage:\n" +
-            "  java -jar ModMergerTool.jar <mod1_dir> <mod2_dir> [options]\n" +
-            "\nRequired:\n" +
-            "  mod1_dir              First mod directory\n" +
-            "  mod2_dir              Second mod directory\n" +
-            "\nOptions:\n" +
-            "  -o, --output <dir>    Output directory (default: ./merged_mod)\n" +
-            "  -a, --auto <strategy> Auto mode\n" +
-            "                        Strategies: keep-mod1, keep-mod2, keep-both\n" +
-            "  -v, --verbose         Verbose output\n" +
-            "  -h, --help            Show this help\n"
+                "Techland Mod Merger v1.0\n" +
+                        "\nUsage:\n" +
+                        "  java -jar ModMergerTool.jar <mod1_dir> <mod2_dir> [options]\n" +
+                        "\nRequired:\n" +
+                        "  mod1_dir              First mod directory\n" +
+                        "  mod2_dir              Second mod directory\n" +
+                        "\nOptions:\n" +
+                        "  -o, --output <dir>    Output directory (default: ./merged_mod)\n" +
+                        "                        Strategies: keep-mod1, keep-mod2, keep-both\n" +
+                        "  -v, --verbose         Verbose output\n" +
+                        "  -h, --help            Show this help\n"
         );
     }
 
     /**
      * 返回配置的字符串表示，用于调试和显示
-     *
+     * <p>
      * 格式：MergeConfig{field1=value1, field2=value2, ...}
      *
      * @return 配置的字符串表示
@@ -243,7 +235,6 @@ public class MergeConfig {
                 ", mod2=" + mod2Directory +
                 ", output=" + outputDirectory +
                 ", interactive=" + interactiveMode +
-                ", strategy=" + defaultMergeStrategy +
                 ", verbose=" + verbose +
                 '}';
     }
