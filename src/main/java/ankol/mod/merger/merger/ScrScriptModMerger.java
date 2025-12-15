@@ -199,6 +199,7 @@ public class ScrScriptModMerger {
      * @return 合并结果（包含合并后的内容和是否有冲突的标志）
      * @throws IOException 如果文件读取或解析失败
      */
+    @SuppressWarnings("all")
     private MergeResult mergeScriptFiles(Path script1, Path script2) throws IOException {
         // 1、使用Antlr4将文件内容解析为AST语法树
         TechlandScriptParser.FileContext file1 = ScrScriptParser.parseFile(script1);
@@ -219,13 +220,14 @@ public class ScrScriptModMerger {
 
         // 第4步：检测到冲突，必须进入交互模式
         // 即使用户指定了自动模式（-a），也要强制进入交互模式处理冲突
-        List<MergeDecision> decisions;
-
+        List<MergeDecision> decisions = new ArrayList<>();
         // 交互模式：为每个冲突让用户决策
-        System.out.println("\n" + "=".repeat(80));
-        System.out.println("⚠️  CONFLICTS DETECTED - User Interaction Required");
-        System.out.println("=".repeat(80));
-        decisions = ConflictResolver.resolveConflicts(diffs);
+        if (!diffs.isEmpty()) {
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("⚠️ CONFLICTS DETECTED IN [" + script1.getFileName() + "] - User Interaction Required");
+            System.out.println("=".repeat(80));
+            decisions = ConflictResolver.resolveConflicts(diffs);
+        }
         // 第5步：根据决策构建合并后的内容
         result = buildMergedContent(script1, script2, file1, file2, diffs, decisions);
         return result;

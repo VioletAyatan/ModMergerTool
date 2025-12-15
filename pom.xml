@@ -13,6 +13,7 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <main.class>ankol.mod.merger.AppMain</main.class>
+        <antlr4.version>4.13.2</antlr4.version>
     </properties>
 
     <dependencies>
@@ -31,7 +32,7 @@
             <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-runtime</artifactId>
-                <version>4.13.2</version>
+                <version>${antlr4.version}</version>
             </dependency>
             <dependency>
                 <groupId>cn.hutool</groupId>
@@ -84,7 +85,7 @@
             <plugin>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
-                <version>4.11.1</version> <!-- 可替换为你需要的版本 -->
+                <version>${antlr4.version}</version>
                 <executions>
                     <execution>
                         <goals>

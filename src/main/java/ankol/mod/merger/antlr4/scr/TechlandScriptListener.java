@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from TechlandScript.g4 by ANTLR 4.13.2
 package ankol.mod.merger.antlr4.scr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 

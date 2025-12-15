@@ -158,10 +158,8 @@ public class ScrTreeComparator {
         for (TechlandScriptParser.DefinitionContext def : definitions) {
             // 为定义提取唯一键（type:name 格式）
             String key = extractDefinitionKey(def);
-            if (key != null) {
-                // 将定义存入索引表
-                map.put(key, def);
-            }
+            // 将定义存入索引表
+            map.put(key, def);
         }
 
         return map;
