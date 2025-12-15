@@ -1,0 +1,18 @@
+sub declare_owa_settings()
+{
+    PresetDef("owa_module")
+    {
+        Description("");
+        AddField("SELECTOR", "", false, true, false);
+        IgnoreField("UserData");
+        IgnoreField("SkinName");
+        Preset("Dynamic")
+        {
+            SetField("SELECTOR", "Dynamic");
+        }
+        Preset("Empty")
+        {
+            SetField("SELECTOR", "Empty");
+        }
+    }
+}
